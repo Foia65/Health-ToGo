@@ -1,14 +1,18 @@
+// La vista della pressione è diversa da tutte le altre
+// perchè legge due serie di dati (systolid e diastolic)
+// e poi le accoppia0
+
 import SwiftUI
 import HealthKit
 
 struct BloodPressureView: View {
     // State variables
     @State private var startDate = Calendar.current.date(byAdding: .day, value: -7, to: Date())! // 1 week ago
-    // invece di usare Date() che spesso riporta zero, puntiamo alle 23:59 di ieri
+
     @State private var endDate: Date = {
         let calendar = Calendar.current
-        let yesterday = calendar.date(byAdding: .day, value: -1, to: Date())!
-        return calendar.date(bySettingHour: 23, minute: 59, second: 59, of: yesterday)!
+        let today = Date()
+        return calendar.date(bySettingHour: 23, minute: 59, second: 59, of: today) ?? today
     }()
     
     @State private var systolicData: [HealthDataPoint] = []
@@ -18,6 +22,8 @@ struct BloodPressureView: View {
     @State private var errorMessage: String?
     @State private var fetchAllData = false
     
+    @AppStorage("isPremiumUser") private var isPremiumUser = false
+
     // HealthKit manager
     @StateObject private var healthKitManager = HealthKitManager()
     
@@ -40,6 +46,7 @@ struct BloodPressureView: View {
                         fetchAllData: $fetchAllData,
                         startDate: $startDate,
                         endDate: $endDate,
+                        isPremiumUser: $isPremiumUser,
                         onDateChange: fetchBloodPressureData
                     )
                     
@@ -55,13 +62,19 @@ struct BloodPressureView: View {
                         }
                     }
                     
-                    // Export Section
-                    Section(header: Text("Export")) {
-                        Button(action: exportCSV) {
-                            Label("Export as CSV", systemImage: "doc.text")
-                        }
-                        .buttonStyle(.bordered)
-                    }
+                    // Export Section 
+                      Section(header: Text("Export")) {
+                          Button(action: exportCSV) {
+                              Label("Export as CSV", systemImage: "doc.text")
+                              if !isPremiumUser {
+                                  Spacer()
+                                  Image(systemName: "crown.fill")
+                                      .foregroundColor(.orange)
+                                      .font(.caption)
+                              }
+                          }
+                          .buttonStyle(.bordered)
+                      }
                     
                     // Detailed Data Section
                     Section(header: Text("Daily Blood Pressure Data")) {
@@ -90,8 +103,6 @@ struct BloodPressureView: View {
                 .onAppear {
                     requestHealthKitAuthorization()
                 }
-                
-
             }
         }
     }
@@ -179,7 +190,7 @@ struct BloodPressureView: View {
             if combinedDict[dayStart] == nil {
                 combinedDict[dayStart] = BloodPressureDataPoint(date: dayStart, systolic: nil, diastolic: nil)
             }
-            combinedDict[dayStart]?.systolic = dataPoint.value
+            combinedDict[dayStart]?.systolic = Int(dataPoint.value.rounded())
         }
         
         // Process diastolic data
@@ -188,7 +199,7 @@ struct BloodPressureView: View {
             if combinedDict[dayStart] == nil {
                 combinedDict[dayStart] = BloodPressureDataPoint(date: dayStart, systolic: nil, diastolic: nil)
             }
-            combinedDict[dayStart]?.diastolic = dataPoint.value
+            combinedDict[dayStart]?.diastolic = Int(dataPoint.value.rounded())
         }
         
         // Convert to array and sort by date

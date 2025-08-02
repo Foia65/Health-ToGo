@@ -1,22 +1,24 @@
 import SwiftUI
 import HealthKit
 
-struct HeartRateView: View {
-    // State variables - identical structure to StepsView
-    @State private var startDate = Calendar.current.date(byAdding: .day, value: -7, to: Date())!
-    // invece di usare Date() che spesso riporta zero, puntiamo alle 23:59 di ieri
+struct StepsView: View {
+    // State variables
+    @State private var startDate = Calendar.current.date(byAdding: .day, value: -7, to: Date())! // 1 week ago
     @State private var endDate: Date = {
         let calendar = Calendar.current
-        let yesterday = calendar.date(byAdding: .day, value: -1, to: Date())!
-        return calendar.date(bySettingHour: 23, minute: 59, second: 59, of: yesterday)!
+        let today = Date()
+        return calendar.date(bySettingHour: 23, minute: 59, second: 59, of: today) ?? today
     }()
     
-    @State private var heartRateData: [HealthDataPoint] = []
+    @State private var stepData: [HealthDataPoint] = [] // qui vengono salvati i dati estratti
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var fetchAllData = false
+    @State private var showPremiumAlert = false
     
-    // HealthKit manager - same instance
+
+    @AppStorage("isPremiumUser") private var isPremiumUser = false
+    
     @StateObject private var healthKitManager = HealthKitManager()
     
     var body: some View {
@@ -25,57 +27,65 @@ struct HeartRateView: View {
                 List {
                     // Titolo
                     Section {
-                            Text("❤️ Heart Rate")
+                            Text("🚶Steps")
                                 .font(.largeTitle.bold())
                                 .padding(.bottom, 8)
                         }
                         .listRowInsets(EdgeInsets())
                         .listRowBackground(Color.clear)
-                    
-                    // Date Controls Section - exactly the same component
+
+                    // Date Controls Section
                     DateControlsView(
                         fetchAllData: $fetchAllData,
                         startDate: $startDate,
                         endDate: $endDate,
-                        onDateChange: fetchHeartRateData
+                        isPremiumUser: $isPremiumUser, 
+                        onDateChange: fetchStepData
                     )
                     
-                    // Summary Section - same component, different labels
-                    if !heartRateData.isEmpty {
+                    // Summary Section
+                    if !stepData.isEmpty {
                         Section(header: Text("Summary")) {
                             HealthSummaryView(
                                 summary: healthDataSummary,
-                                dataType: "Heart Rate",
-                                unit: "BPM"
+                                dataType: "Steps",
+                                unit: "steps"
                             )
                         }
                     }
                     
-                    // Export Section - same component, different data type
-                    Section(header: Text("Export")) {
-                        Button(action: exportCSV) {
-                            Label("Export as CSV", systemImage: "doc.text")
-                        }
-                        .buttonStyle(.bordered)
-                    }
+                    // Export Section
+                      Section(header: Text("Export")) {
+                          Button(action: exportCSV) {
+                              Label("Export as CSV", systemImage: "doc.text")
+                              if !isPremiumUser {
+                                  Spacer()
+                                  Image(systemName: "crown.fill")
+                                      .foregroundColor(.orange)
+                                      .font(.caption)
+                              }
+                          }
+                          .buttonStyle(.bordered)
+                      }
                     
-                    // Detailed Data Section - same component, different labels
-                    Section(header: Text("Daily Heart Rate Data")) {
+                    
+                    // Detailed Data Section
+                    Section(header: Text("Daily Step Data")) {
                         if isLoading {
                             ProgressView()
                                 .frame(maxWidth: .infinity)
                         } else if let error = errorMessage {
                             Text("Error: \(error)")
                                 .foregroundColor(.red)
-                        } else if heartRateData.isEmpty {
-                            Text("No heart rate data available")
+                        } else if stepData.isEmpty {
+                            Text("No step data available")
                                 .foregroundColor(.secondary)
                         } else {
-                            ForEach(heartRateData) { dataPoint in
+                            ForEach(stepData) { dataPoint in
                                 DailyHealthDataView(
                                     dataPoint: dataPoint,
-                                    dataType: "Heart Rate",
-                                    unit: "BPM"
+                                    dataType: "Steps",
+                                    unit: "steps"
                                 )
                             }
                         }
@@ -83,17 +93,17 @@ struct HeartRateView: View {
                 }
                 .blur(radius: isLoading ? 2 : 0)
                 .disabled(isLoading)
-               // .navigationTitle("❤️ Heart Rate Analytics")  // Different title and emoji
+                // .navigationTitle("🚶Steps Analytics")
                 .refreshable {
-                    fetchHeartRateData()
+                    fetchStepData()
                 }
                 .onAppear {
                     requestHealthKitAuthorization()
                 }
                 
-                // Loading overlay - same component, different message
+                // Loading overlay
                 if isLoading {
-                    LoadingOverlayView(message: "Fetching heart rate data...")
+                    LoadingOverlayView(message: "Fetching step data...")
                 }
             }
         }
@@ -103,38 +113,34 @@ struct HeartRateView: View {
     
     private var healthDataSummary: HealthDataSummary {
         HealthDataSummary(
-            data: heartRateData,
+            data: stepData,
             startDate: startDate,
             endDate: endDate,
             fetchAllData: fetchAllData,
-            isCumulative: false  // Heart rate is not cumulative
+            isCumulative: true  // Steps are cumulative
         )
     }
     
     // MARK: - Methods
-    
     private func requestHealthKitAuthorization() {
-        // Only change: different HKQuantityTypeIdentifier
-        healthKitManager.requestAuthorization(for: [.heartRate]) { result in
+        healthKitManager.requestAuthorization(for: [.stepCount]) { result in
             switch result {
             case .success:
-                fetchHeartRateData()
+                fetchStepData()
             case .failure(let error):
                 errorMessage = error.localizedDescription
             }
         }
     }
     
-    private func fetchHeartRateData() {
+    private func fetchStepData() {
         guard !isLoading else { return }
-        
         isLoading = true
         errorMessage = nil
-        heartRateData = []  // Different variable name
+        stepData = []  // svuota l'array con gli step
         
-        // Only change: different HKQuantityTypeIdentifier
         healthKitManager.fetchData(
-            for: .heartRate,
+            for: .stepCount,
             startDate: startDate,
             endDate: endDate,
             fetchAll: fetchAllData
@@ -143,7 +149,7 @@ struct HeartRateView: View {
             
             switch result {
             case .success(let data):
-                heartRateData = data  // Different variable name
+                stepData = data
             case .failure(let error):
                 errorMessage = error.localizedDescription
             }
@@ -152,10 +158,10 @@ struct HeartRateView: View {
     
     private func exportCSV() {
         CSVExporter.exportHealthData(
-            data: heartRateData,  // Different data source
+            data: stepData,
             startDate: startDate,
             endDate: endDate,
-            dataType: "HeartRate"  // Different data type name
+            dataType: "Steps"
         ) { error in
             errorMessage = error
         }
@@ -164,8 +170,8 @@ struct HeartRateView: View {
 
 // MARK: - Preview
 
-struct HeartRateView_Previews: PreviewProvider {
+struct StepsView_Previews: PreviewProvider {
     static var previews: some View {
-        HeartRateView()
+        StepsView()
     }
 }

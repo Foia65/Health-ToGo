@@ -3,19 +3,18 @@ import HealthKit
 
 struct WeightView: View {
     @State private var startDate = Calendar.current.date(byAdding: .day, value: -7, to: Date())!
-    // invece di usare Date() che spesso riporta zero, puntiamo alle 23:59 di ieri
+
     @State private var endDate: Date = {
         let calendar = Calendar.current
-        let yesterday = calendar.date(byAdding: .day, value: -1, to: Date())!
-        return calendar.date(bySettingHour: 23, minute: 59, second: 59, of: yesterday)!
+        let today = Date()
+        return calendar.date(bySettingHour: 23, minute: 59, second: 59, of: today) ?? today
     }()
-
+    
     @State private var massData: [HealthDataPoint] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var fetchAllData = false
     @State private var showPremiumAlert = false
- //   @State private var premiumAlertType: PremiumAlertType = .csvExport
     @State private var showPremiumInfo = false
 
     @AppStorage("isPremiumUser") private var isPremiumUser = false
@@ -43,32 +42,27 @@ struct WeightView: View {
                         .listRowInsets(EdgeInsets())
                         .listRowBackground(Color.clear)
 
-                        // Date Controls Section - exactly the same component
+                        // Date Controls Section 
                         DateControlsView(
                             fetchAllData: $fetchAllData,
                             startDate: $startDate,
                             endDate: $endDate,
- //                           isPremiumUser: isPremiumUser,
+                            isPremiumUser: $isPremiumUser,
                             onDateChange: fetchMassData,
-//                            onPremiumRequired: {
-//                                premiumAlertType = .allData
-//                                showPremiumAlert = true
-//                            }
                         )
 
-                        // Summary Section - same component, different labels
+                        // Summary Section
                         if !massData.isEmpty {
                             Section(header: Text("Summary")) {
                                 HealthSummaryView(
                                     summary: healthDataSummary,
                                     dataType: "Weight",
                                     unit: "Kg",
-//                                    decimalPrecision: 1  // per ottenere 1 decimale dopo la virgola
                                 )
                             }
                         }
 
-                        // Export Section - same component, different data type
+                        // Export Section
                         Section(header: Text("Export")) {
                             Button(action: exportCSV) {
                                 Label("Export as CSV", systemImage: "doc.text")
@@ -82,7 +76,7 @@ struct WeightView: View {
                             .buttonStyle(.bordered)
                         }
 
-                        // Detailed Data Section - same component, different labels
+                        // Detailed Data Section
                         Section(header: Text("Daily Weight Data")) {
                             if isLoading {
                                 ProgressView()
@@ -99,8 +93,6 @@ struct WeightView: View {
                                         dataPoint: dataPoint,
                                         dataType: "Weight",
                                         unit: "Kg",
- //                                       decimalPrecision: 1  // per ottenere 1 decimale dopo la virgola
-
                                     )
                                 }
                             }
@@ -114,14 +106,14 @@ struct WeightView: View {
                     .onAppear {
                         requestHealthKitAuthorization()
                     }
-                    .alert("Premium Feature Required", isPresented: $showPremiumAlert) {
-                        Button("Upgrade to Premium") {
-                            showPremiumInfo = true
-                        }
-                        Button("Cancel", role: .cancel) { }
-                    } message: {
-  //                      Text(premiumAlertMessage)
-                    }
+//                    .alert("Premium Feature Required", isPresented: $showPremiumAlert) {
+//                        Button("Upgrade to Premium") {
+//                            showPremiumInfo = true
+//                        }
+//                        Button("Cancel", role: .cancel) { }
+//                    } message: {
+//                      Text(premiumAlertMessage)
+//                    }
 
                     // Loading overlay - same component, different message
                     if isLoading {
@@ -136,9 +128,6 @@ struct WeightView: View {
 //                }
             }
         }
-//        .sheet(isPresented: $showPremiumInfo) {
-//            PremiumInfo()
-//        }
     }
 
     // MARK: - Computed Properties
@@ -153,14 +142,6 @@ struct WeightView: View {
         )
     }
 
-//    private var premiumAlertMessage: String {
-//        switch premiumAlertType {
-//        case .csvExport:
-//            return "CSV export is only available for premium users. Upgrade to access this feature and export your health data."
-//        case .allData:
-//            return "Fetching all historical data is only available for premium users. Upgrade to access your complete health history."
-//        }
-//    }
 
     // MARK: - Methods
 
@@ -204,12 +185,7 @@ struct WeightView: View {
     }
 
     private func exportCSV() {
-        // Check if user is premium before allowing export
-//        guard isPremiumUser else {
-//            premiumAlertType = .csvExport
-//            showPremiumAlert = true
-//            return
-//        }
+
         CSVExporter.exportHealthData(
             data: massData,
             startDate: startDate,
