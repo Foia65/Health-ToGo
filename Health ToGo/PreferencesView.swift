@@ -16,9 +16,9 @@ struct PreferencesView: View {
                                 Image(systemName: "info.circle.fill")
                             }
                         }
-                        
+
                     }
-                    
+
 #if DEBUG
                     Section(header: Text("DEBUG")) {
                         NavigationLink(

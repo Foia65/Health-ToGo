@@ -4,7 +4,7 @@ import SwiftUI
 
 struct LoadingOverlayView: View {
     let message: String
-    
+
     var body: some View {
         VStack {
             ProgressView(message)

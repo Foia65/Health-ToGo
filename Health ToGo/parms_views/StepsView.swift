@@ -9,18 +9,19 @@ struct StepsView: View {
         let today = Date()
         return calendar.date(bySettingHour: 23, minute: 59, second: 59, of: today) ?? today
     }()
-    
+
     @State private var stepData: [HealthDataPoint] = [] // qui vengono salvati i dati estratti
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var fetchAllData = false
     @State private var showPremiumAlert = false
+    @State private var premiumAlertType: PremiumAlertType = .csvExport
+    @State private var showPremiumInfo = false
     
-
     @AppStorage("isPremiumUser") private var isPremiumUser = false
-    
+
     @StateObject private var healthKitManager = HealthKitManager()
-    
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -39,10 +40,11 @@ struct StepsView: View {
                         fetchAllData: $fetchAllData,
                         startDate: $startDate,
                         endDate: $endDate,
-                        isPremiumUser: $isPremiumUser, 
-                        onDateChange: fetchStepData
+                        isPremiumUser: $isPremiumUser,
+                        onDateChange: fetchStepData,                            onFetchAllDataToggle: handleFetchAllDataToggle
+
                     )
-                    
+
                     // Summary Section
                     if !stepData.isEmpty {
                         Section(header: Text("Summary")) {
@@ -53,7 +55,7 @@ struct StepsView: View {
                             )
                         }
                     }
-                    
+
                     // Export Section
                       Section(header: Text("Export")) {
                           Button(action: exportCSV) {
@@ -66,9 +68,9 @@ struct StepsView: View {
                               }
                           }
                           .buttonStyle(.bordered)
+                        //   .opacity(isPremiumUser ? 1.0 : 0.6)
                       }
-                    
-                    
+
                     // Detailed Data Section
                     Section(header: Text("Daily Step Data")) {
                         if isLoading {
@@ -100,17 +102,33 @@ struct StepsView: View {
                 .onAppear {
                     requestHealthKitAuthorization()
                 }
-                
+                .alert("Premium Feature Required", isPresented: $showPremiumAlert) {
+                                        Button("Upgrade to Premium") {
+                                            showPremiumInfo = true
+                                        }
+                                        Button("Cancel", role: .cancel) {
+                                            // Reset the toggle if user cancels fetch all data
+                                            if premiumAlertType == .allData {
+                                                fetchAllData = false
+                                            }
+                                        }
+                                    } message: {
+                                        Text(premiumAlertMessage)
+                                    }
+
                 // Loading overlay
                 if isLoading {
                     LoadingOverlayView(message: "Fetching step data...")
                 }
             }
         }
+        .sheet(isPresented: $showPremiumInfo) {
+            PremiumInfo()
+        }
     }
-    
+
     // MARK: - Computed Properties
-    
+
     private var healthDataSummary: HealthDataSummary {
         HealthDataSummary(
             data: stepData,
@@ -120,6 +138,15 @@ struct StepsView: View {
             isCumulative: true  // Steps are cumulative
         )
     }
+
+    private var premiumAlertMessage: String {
+         switch premiumAlertType {
+         case .csvExport:
+             return "CSV export is only available for premium users. Upgrade to access this feature and export your health data."
+         case .allData:
+             return "Fetching all historical data is only available for premium users. Upgrade to access your complete health history."
+         }
+     }
     
     // MARK: - Methods
     private func requestHealthKitAuthorization() {
@@ -132,13 +159,13 @@ struct StepsView: View {
             }
         }
     }
-    
+
     private func fetchStepData() {
         guard !isLoading else { return }
         isLoading = true
         errorMessage = nil
         stepData = []  // svuota l'array con gli step
-        
+
         healthKitManager.fetchData(
             for: .stepCount,
             startDate: startDate,
@@ -146,7 +173,7 @@ struct StepsView: View {
             fetchAll: fetchAllData
         ) { result in
             isLoading = false
-            
+
             switch result {
             case .success(let data):
                 stepData = data
@@ -155,8 +182,15 @@ struct StepsView: View {
             }
         }
     }
-    
+
     private func exportCSV() {
+        // Check if user is premium before allowing export
+         guard isPremiumUser else {
+             premiumAlertType = .csvExport
+             showPremiumAlert = true
+             return
+         }
+        
         CSVExporter.exportHealthData(
             data: stepData,
             startDate: startDate,
@@ -166,7 +200,27 @@ struct StepsView: View {
             errorMessage = error
         }
     }
+    
+    
+    private func handleFetchAllDataToggle() {
+        // For non-premium users trying to enable fetch all data
+        if !isPremiumUser {
+            premiumAlertType = .allData
+            showPremiumAlert = true
+        } else {
+            // Premium user - proceed with data fetch
+            fetchStepData()
+        }
+    }
 }
+
+// MARK: - Premium Alert Type Enum
+
+enum PremiumAlertType {
+    case csvExport
+    case allData
+}
+
 
 // MARK: - Preview
 

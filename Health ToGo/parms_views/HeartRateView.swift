@@ -8,18 +8,20 @@ struct HeartRateView: View {
         let today = Date()
         return calendar.date(bySettingHour: 23, minute: 59, second: 59, of: today) ?? today
     }()
-    
+
     @State private var heartRateData: [HealthDataPoint] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var fetchAllData = false
-    
+    @State private var showPremiumAlert = false
+    @State private var premiumAlertType: PremiumAlertType = .csvExport
+    @State private var showPremiumInfo = false
+
     @AppStorage("isPremiumUser") private var isPremiumUser = false
 
-    
     // HealthKit manager
     @StateObject private var healthKitManager = HealthKitManager()
-    
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -32,16 +34,17 @@ struct HeartRateView: View {
                         }
                         .listRowInsets(EdgeInsets())
                         .listRowBackground(Color.clear)
-                    
+
                     // Date Controls Section
                     DateControlsView(
                         fetchAllData: $fetchAllData,
                         startDate: $startDate,
                         endDate: $endDate,
                         isPremiumUser: $isPremiumUser,
-                        onDateChange: fetchHeartRateData
+                        onDateChange: fetchHeartRateData,
+                        onFetchAllDataToggle: handleFetchAllDataToggle
                     )
-                    
+
                     // Summary Section
                     if !heartRateData.isEmpty {
                         Section(header: Text("Summary")) {
@@ -52,7 +55,7 @@ struct HeartRateView: View {
                             )
                         }
                     }
-                    
+
                     // Export Section 
                       Section(header: Text("Export")) {
                           Button(action: exportCSV) {
@@ -66,7 +69,7 @@ struct HeartRateView: View {
                           }
                           .buttonStyle(.bordered)
                       }
-                    
+
                     // Detailed Data Section
                     Section(header: Text("Daily Heart Rate Data")) {
                         if isLoading {
@@ -97,17 +100,33 @@ struct HeartRateView: View {
                 .onAppear {
                     requestHealthKitAuthorization()
                 }
+                .alert("Premium Feature Required", isPresented: $showPremiumAlert) {
+                                        Button("Upgrade to Premium") {
+                                            showPremiumInfo = true
+                                        }
+                                        Button("Cancel", role: .cancel) {
+                                            // Reset the toggle if user cancels fetch all data
+                                            if premiumAlertType == .allData {
+                                                fetchAllData = false
+                                            }
+                                        }
+                                    } message: {
+                                        Text(premiumAlertMessage)
+                                    }
                 
-                // Loading overlay 
+                // Loading overlay
                 if isLoading {
                     LoadingOverlayView(message: "Fetching heart rate data...")
                 }
             }
         }
+        .sheet(isPresented: $showPremiumInfo) {
+                   PremiumInfo()
+               }
     }
-    
+
     // MARK: - Computed Properties
-    
+
     private var healthDataSummary: HealthDataSummary {
         HealthDataSummary(
             data: heartRateData,
@@ -117,9 +136,18 @@ struct HeartRateView: View {
             isCumulative: false  // Heart rate is not cumulative
         )
     }
+
+    private var premiumAlertMessage: String {
+         switch premiumAlertType {
+         case .csvExport:
+             return "CSV export is only available for premium users. Upgrade to access this feature and export your health data."
+         case .allData:
+             return "Fetching all historical data is only available for premium users. Upgrade to access your complete health history."
+         }
+     }
     
     // MARK: - Methods
-    
+
     private func requestHealthKitAuthorization() {
         // Only change: different HKQuantityTypeIdentifier
         healthKitManager.requestAuthorization(for: [.heartRate]) { result in
@@ -131,14 +159,14 @@ struct HeartRateView: View {
             }
         }
     }
-    
+
     private func fetchHeartRateData() {
         guard !isLoading else { return }
-        
+
         isLoading = true
         errorMessage = nil
         heartRateData = []  // Different variable name
-        
+
         // Only change: different HKQuantityTypeIdentifier
         healthKitManager.fetchData(
             for: .heartRate,
@@ -147,7 +175,7 @@ struct HeartRateView: View {
             fetchAll: fetchAllData
         ) { result in
             isLoading = false
-            
+
             switch result {
             case .success(let data):
                 heartRateData = data  // Different variable name
@@ -156,8 +184,13 @@ struct HeartRateView: View {
             }
         }
     }
-    
+
     private func exportCSV() {
+        guard isPremiumUser else {
+              premiumAlertType = .csvExport
+              showPremiumAlert = true
+              return
+          }
         CSVExporter.exportHealthData(
             data: heartRateData,  // Different data source
             startDate: startDate,
@@ -167,7 +200,20 @@ struct HeartRateView: View {
             errorMessage = error
         }
     }
+
+
+    private func handleFetchAllDataToggle() {
+        // For non-premium users trying to enable fetch all data
+        if !isPremiumUser {
+            premiumAlertType = .allData
+            showPremiumAlert = true
+        } else {
+            // Premium user - proceed with data fetch
+            fetchHeartRateData()
+        }
+    }
 }
+
 
 // MARK: - Preview
 

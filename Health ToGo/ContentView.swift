@@ -5,7 +5,6 @@ struct ContentView: View {
     @State private var showingSettings = false
     @AppStorage("isPremiumUser") private var isPremiumUser = false
 
-    
     var body: some View {
         NavigationStack {
             VStack {
@@ -20,7 +19,7 @@ struct ContentView: View {
                                 Image(systemName: "figure.arms.open")
                             }
                         }
-                        
+
                         NavigationLink(
                             destination: GenericView()
                         ) {
@@ -31,7 +30,7 @@ struct ContentView: View {
                                     .foregroundStyle(.green)
                             }
                         }
-                        
+
                         NavigationLink(
                             destination: GenericView()
                         ) {
@@ -42,9 +41,9 @@ struct ContentView: View {
                                     .foregroundStyle(.purple)
                             }
                         }
-                        
+
                     } // end Body measures section
-                    
+
                     Section(header: Text("Heart")) {
                         NavigationLink(
                             destination: HeartRateView()
@@ -67,11 +66,11 @@ struct ContentView: View {
                                     // .foregroundStyle(.red)
                             }
                         }
-                        
+
                     }  // end heart section
-                    
+
                     Section(header: Text("Activity & Fitness")) {
-                        
+
                         NavigationLink(
                             destination: StepsView()
                         ) {
@@ -103,16 +102,15 @@ struct ContentView: View {
                             }
                         }
 
-                        
                     } // end Activity & Fitness  section
                 } // end Form
-                
+
                 //                if !isPremiumUser {
                 //                    BannerContentView()
                 //                        .background(Color(UIColor.systemBackground))
                 //                        .frame(height: 60)
                 //                }
-                
+
             }  // end Vstack
             .navigationTitle("Health To Go")
             .navigationBarTitleDisplayMode(.inline)
@@ -122,7 +120,7 @@ struct ContentView: View {
             }
         }
     }
-    
+
     private var settingsToolbarItem: some ToolbarContent {
         ToolbarItem(placement: .navigationBarTrailing) {
             Button {
@@ -140,7 +138,6 @@ struct ContentView: View {
         }
     }
 }
-
 
 #Preview {
     ContentView()

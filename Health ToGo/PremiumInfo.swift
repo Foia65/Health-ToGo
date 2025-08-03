@@ -4,7 +4,7 @@ struct PremiumInfo: View {
     @State private var isPurchasing = false
     @State private var showPurchaseSuccess = false
     @State private var showPurchaseError = false
-    
+
     var body: some View {
         VStack(spacing: 0) {
             // Header
@@ -13,18 +13,18 @@ struct PremiumInfo: View {
                     .font(.system(size: 40))
                     .foregroundColor(.yellow)
                     .padding(.top, 30)
-                
+
                 Text("Go Premium")
                     .font(.system(size: 28, weight: .bold))
-                
+
                 Text("Unlock the full potential of the app")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
             .padding(.bottom, 20)
-            
+
             Divider()
-            
+
             // Features List
             VStack(spacing: 20) {
                 PremiumFeatureRow(
@@ -32,13 +32,13 @@ struct PremiumInfo: View {
                     title: "CSV Export",
                     description: "Export your complete health data for analysis in Excel or other tools"
                 )
-                
+
                 PremiumFeatureRow(
                     icon: "clock.arrow.circlepath",
                     title: "Fetch All Historical Data",
                     description: "Access your complete health history, not just recent data"
                 )
-                
+
                 PremiumFeatureRow(
                     icon: "xmark.circle",
                     title: "Remove Ads",
@@ -46,25 +46,25 @@ struct PremiumInfo: View {
                 )
             }
             .padding(.vertical, 25)
-            
+
             Divider()
-            
+
             // Pricing
             VStack(spacing: 8) {
                 Text("Only")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
-                
+
                 Text("3.99€")
                     .font(.system(size: 32, weight: .bold))
                     .foregroundColor(.primary)
-                
+
                 Text("One-time payment • No subscription")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
             .padding(.vertical, 20)
-            
+
             // Purchase Button
             Button(action: initiatePurchase) {
                 HStack {
@@ -84,7 +84,7 @@ struct PremiumInfo: View {
             }
             .padding(.horizontal)
             .disabled(isPurchasing)
-            
+
             // Restore Purchases
             Button(action: restorePurchases) {
                 Text("Restore Purchases")
@@ -92,7 +92,7 @@ struct PremiumInfo: View {
                     .foregroundColor(.blue)
             }
             .padding(.vertical, 10)
-            
+
             // Terms and Privacy
             HStack(spacing: 20) {
                 Button("Terms of Service") {
@@ -121,7 +121,7 @@ struct PremiumInfo: View {
             Text("Could not complete the purchase. Please try again later.")
         }
     }
-    
+
     private func initiatePurchase() {
         isPurchasing = true
         // Simulate purchase process
@@ -137,7 +137,7 @@ struct PremiumInfo: View {
             }
         }
     }
-    
+
     private func restorePurchases() {
         isPurchasing = true
         // Simulate restore process
@@ -153,18 +153,18 @@ struct PremiumFeatureRow: View {
     let icon: String
     let title: String
     let description: String
-    
+
     var body: some View {
         HStack(alignment: .top, spacing: 16) {
             Image(systemName: icon)
                 .font(.title2)
                 .foregroundColor(.blue)
                 .frame(width: 30)
-            
+
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.headline)
-                
+
                 Text(description)
                     .font(.subheadline)
                     .foregroundColor(.secondary)
@@ -181,7 +181,7 @@ struct PremiumInfo_Previews: PreviewProvider {
         Group {
             PremiumInfo()
                 .previewDisplayName("Light Mode")
-            
+
             PremiumInfo()
                 .preferredColorScheme(.dark)
                 .previewDisplayName("Dark Mode")
