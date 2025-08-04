@@ -25,7 +25,6 @@ struct BloodPressureView: View {
     @State private var showPremiumAlert = false
     @State private var showPremiumInfo = false
 
-
     @AppStorage("isPremiumUser") private var isPremiumUser = false
 
     // HealthKit manager
@@ -33,94 +32,102 @@ struct BloodPressureView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                List {
-                    // Titolo
-                    Section {
+            VStack {
+                ZStack {
+                    List {
+                        // Titolo
+                        Section {
                             Text("🩺 Blood Pressure")
                                 .font(.largeTitle.bold())
                                 .padding(.bottom, 8)
                         }
                         .listRowInsets(EdgeInsets())
                         .listRowBackground(Color.clear)
-
-                    // Date Controls Section
-                    DateControlsView(
-                        fetchAllData: $fetchAllData,
-                        startDate: $startDate,
-                        endDate: $endDate,
-                        isPremiumUser: $isPremiumUser,
-                        onDateChange: fetchBloodPressureData,
-                        onFetchAllDataToggle: handleFetchAllDataToggle
-
-                    )
-
-                    // Summary Section
-                    if !combinedData.isEmpty {
-                        Section(header: Text("Summary")) {
-                            BloodPressureSummaryView(
-                                combinedData: combinedData,
-                                startDate: startDate,
-                                endDate: endDate,
-                                fetchAllData: fetchAllData
-                            )
+                        
+                        // Date Controls Section
+                        DateControlsView(
+                            fetchAllData: $fetchAllData,
+                            startDate: $startDate,
+                            endDate: $endDate,
+                            isPremiumUser: $isPremiumUser,
+                            onDateChange: fetchBloodPressureData,
+                            onFetchAllDataToggle: handleFetchAllDataToggle
+                            
+                        )
+                        
+                        // Summary Section
+                        if !combinedData.isEmpty {
+                            Section(header: Text("Summary")) {
+                                BloodPressureSummaryView(
+                                    combinedData: combinedData,
+                                    startDate: startDate,
+                                    endDate: endDate,
+                                    fetchAllData: fetchAllData
+                                )
+                            }
                         }
-                    }
-
-                    // Export Section 
-                      Section(header: Text("Export")) {
-                          Button(action: exportCSV) {
-                              Label("Export as CSV", systemImage: "doc.text")
-                              if !isPremiumUser {
-                                  Spacer()
-                                  Image(systemName: "crown.fill")
-                                      .foregroundColor(.orange)
-                                      .font(.caption)
-                              }
-                          }
-                          .buttonStyle(.bordered)
-                      }
-
-                    // Detailed Data Section
-                    Section(header: Text("Daily Blood Pressure Data")) {
-                        if isLoading {
-                            ProgressView()
-                                .frame(maxWidth: .infinity)
-                        } else if let error = errorMessage {
-                            Text("Error: \(error)")
-                                .foregroundColor(.red)
-                        } else if combinedData.isEmpty {
-                            Text("No blood pressure data available")
-                                .foregroundColor(.secondary)
-                        } else {
-                            ForEach(combinedData.filter { $0.hasData }) { dataPoint in
-                                BloodPressureDataView(dataPoint: dataPoint)
+                        
+                        // Export Section 
+                        Section(header: Text("Export")) {
+                            Button(action: exportCSV) {
+                                Label("Export as CSV", systemImage: "doc.text")
+                                if !isPremiumUser {
+                                    Spacer()
+                                    Image(systemName: "crown.fill")
+                                        .foregroundColor(.orange)
+                                        .font(.caption)
+                                }
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                        
+                        // Detailed Data Section
+                        Section(header: Text("Daily Blood Pressure Data")) {
+                            if isLoading {
+                                ProgressView()
+                                    .frame(maxWidth: .infinity)
+                            } else if let error = errorMessage {
+                                Text("Error: \(error)")
+                                    .foregroundColor(.red)
+                            } else if combinedData.isEmpty {
+                                Text("No blood pressure data available")
+                                    .foregroundColor(.secondary)
+                            } else {
+                                ForEach(combinedData.filter { $0.hasData }) { dataPoint in
+                                    BloodPressureDataView(dataPoint: dataPoint)
+                                }
                             }
                         }
                     }
+                    .blur(radius: isLoading ? 2 : 0)
+                    .disabled(isLoading)
+                    .refreshable {
+                        fetchBloodPressureData()
+                    }
+                    .onAppear {
+                        requestHealthKitAuthorization()
+                    }
+                    .alert("Premium Feature Required", isPresented: $showPremiumAlert) {
+                        Button("Upgrade to Premium") {
+                            showPremiumInfo = true
+                        }
+                        Button("Cancel", role: .cancel) {
+                            // Reset the toggle if user cancels fetch all data
+                            if premiumAlertType == .allData {
+                                fetchAllData = false
+                            }
+                        }
+                    } message: {
+                        Text(premiumAlertMessage)
+                    }
+                    
                 }
-                .blur(radius: isLoading ? 2 : 0)
-                .disabled(isLoading)
-                .refreshable {
-                    fetchBloodPressureData()
+                
+                if !isPremiumUser {
+                    BannerContentView()
+                        .background(Color(UIColor.systemBackground))
+                        .frame(height: 60)
                 }
-                .onAppear {
-                    requestHealthKitAuthorization()
-                }
-                .alert("Premium Feature Required", isPresented: $showPremiumAlert) {
-                                        Button("Upgrade to Premium") {
-                                            showPremiumInfo = true
-                                        }
-                                        Button("Cancel", role: .cancel) {
-                                            // Reset the toggle if user cancels fetch all data
-                                            if premiumAlertType == .allData {
-                                                fetchAllData = false
-                                            }
-                                        }
-                                    } message: {
-                                        Text(premiumAlertMessage)
-                                    }
-
             }
         }
         .sheet(isPresented: $showPremiumInfo) {
@@ -470,7 +477,12 @@ class BloodPressureCSVExporter {
             UIApplication.shared.connectedScenes
                 .compactMap { $0 as? UIWindowScene }
                 .flatMap { $0.windows }
-                .first(where: { $0.isKeyWindow })?.rootViewController?.present(activityVC, animated: true)
+                .first(where: { $0.isKeyWindow })?
+                .rootViewController?
+                .present(
+                    activityVC,
+                    animated: true
+                )
         } catch {
             onError("Export failed: \(error.localizedDescription)")
         }

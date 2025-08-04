@@ -105,11 +105,11 @@ struct ContentView: View {
                     } // end Activity & Fitness  section
                 } // end Form
 
-                //                if !isPremiumUser {
-                //                    BannerContentView()
-                //                        .background(Color(UIColor.systemBackground))
-                //                        .frame(height: 60)
-                //                }
+                                if !isPremiumUser {
+                                    BannerContentView()
+                                        .background(Color(UIColor.systemBackground))
+                                        .frame(height: 60)
+                                }
 
             }  // end Vstack
             .navigationTitle("Health To Go")

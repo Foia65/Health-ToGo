@@ -24,99 +24,107 @@ struct HeartRateView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                List {
-                    // Titolo
-                    Section {
+            VStack {
+                ZStack {
+                    List {
+                        // Titolo
+                        Section {
                             Text("❤️ Heart Rate")
                                 .font(.largeTitle.bold())
                                 .padding(.bottom, 8)
                         }
                         .listRowInsets(EdgeInsets())
                         .listRowBackground(Color.clear)
-
-                    // Date Controls Section
-                    DateControlsView(
-                        fetchAllData: $fetchAllData,
-                        startDate: $startDate,
-                        endDate: $endDate,
-                        isPremiumUser: $isPremiumUser,
-                        onDateChange: fetchHeartRateData,
-                        onFetchAllDataToggle: handleFetchAllDataToggle
-                    )
-
-                    // Summary Section
-                    if !heartRateData.isEmpty {
-                        Section(header: Text("Summary")) {
-                            HealthSummaryView(
-                                summary: healthDataSummary,
-                                dataType: "Heart Rate",
-                                unit: "BPM"
-                            )
-                        }
-                    }
-
-                    // Export Section 
-                      Section(header: Text("Export")) {
-                          Button(action: exportCSV) {
-                              Label("Export as CSV", systemImage: "doc.text")
-                              if !isPremiumUser {
-                                  Spacer()
-                                  Image(systemName: "crown.fill")
-                                      .foregroundColor(.orange)
-                                      .font(.caption)
-                              }
-                          }
-                          .buttonStyle(.bordered)
-                      }
-
-                    // Detailed Data Section
-                    Section(header: Text("Daily Heart Rate Data")) {
-                        if isLoading {
-                            ProgressView()
-                                .frame(maxWidth: .infinity)
-                        } else if let error = errorMessage {
-                            Text("Error: \(error)")
-                                .foregroundColor(.red)
-                        } else if heartRateData.isEmpty {
-                            Text("No heart rate data available")
-                                .foregroundColor(.secondary)
-                        } else {
-                            ForEach(heartRateData) { dataPoint in
-                                DailyHealthDataView(
-                                    dataPoint: dataPoint,
+                        
+                        // Date Controls Section
+                        DateControlsView(
+                            fetchAllData: $fetchAllData,
+                            startDate: $startDate,
+                            endDate: $endDate,
+                            isPremiumUser: $isPremiumUser,
+                            onDateChange: fetchHeartRateData,
+                            onFetchAllDataToggle: handleFetchAllDataToggle
+                        )
+                        
+                        // Summary Section
+                        if !heartRateData.isEmpty {
+                            Section(header: Text("Summary")) {
+                                HealthSummaryView(
+                                    summary: healthDataSummary,
                                     dataType: "Heart Rate",
                                     unit: "BPM"
                                 )
                             }
                         }
+                        
+                        // Export Section 
+                        Section(header: Text("Export")) {
+                            Button(action: exportCSV) {
+                                Label("Export as CSV", systemImage: "doc.text")
+                                if !isPremiumUser {
+                                    Spacer()
+                                    Image(systemName: "crown.fill")
+                                        .foregroundColor(.orange)
+                                        .font(.caption)
+                                }
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                        
+                        // Detailed Data Section
+                        Section(header: Text("Daily Heart Rate Data")) {
+                            if isLoading {
+                                ProgressView()
+                                    .frame(maxWidth: .infinity)
+                            } else if let error = errorMessage {
+                                Text("Error: \(error)")
+                                    .foregroundColor(.red)
+                            } else if heartRateData.isEmpty {
+                                Text("No heart rate data available")
+                                    .foregroundColor(.secondary)
+                            } else {
+                                ForEach(heartRateData) { dataPoint in
+                                    DailyHealthDataView(
+                                        dataPoint: dataPoint,
+                                        dataType: "Heart Rate",
+                                        unit: "BPM"
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    .blur(radius: isLoading ? 2 : 0)
+                    .disabled(isLoading)
+                    .refreshable {
+                        fetchHeartRateData()
+                    }
+                    .onAppear {
+                        requestHealthKitAuthorization()
+                    }
+                    .alert("Premium Feature Required", isPresented: $showPremiumAlert) {
+                        Button("Upgrade to Premium") {
+                            showPremiumInfo = true
+                        }
+                        Button("Cancel", role: .cancel) {
+                            // Reset the toggle if user cancels fetch all data
+                            if premiumAlertType == .allData {
+                                fetchAllData = false
+                            }
+                        }
+                    } message: {
+                        Text(premiumAlertMessage)
+                    }
+                    
+                    // Loading overlay
+                    if isLoading {
+                        LoadingOverlayView(message: "Fetching heart rate data...")
                     }
                 }
-                .blur(radius: isLoading ? 2 : 0)
-                .disabled(isLoading)
-                .refreshable {
-                    fetchHeartRateData()
-                }
-                .onAppear {
-                    requestHealthKitAuthorization()
-                }
-                .alert("Premium Feature Required", isPresented: $showPremiumAlert) {
-                                        Button("Upgrade to Premium") {
-                                            showPremiumInfo = true
-                                        }
-                                        Button("Cancel", role: .cancel) {
-                                            // Reset the toggle if user cancels fetch all data
-                                            if premiumAlertType == .allData {
-                                                fetchAllData = false
-                                            }
-                                        }
-                                    } message: {
-                                        Text(premiumAlertMessage)
-                                    }
                 
-                // Loading overlay
-                if isLoading {
-                    LoadingOverlayView(message: "Fetching heart rate data...")
+                if !isPremiumUser {
+                    BannerContentView()
+                        .background(Color(UIColor.systemBackground))
+                        .frame(height: 60)
                 }
             }
         }
@@ -201,7 +209,6 @@ struct HeartRateView: View {
         }
     }
 
-
     private func handleFetchAllDataToggle() {
         // For non-premium users trying to enable fetch all data
         if !isPremiumUser {
@@ -213,7 +220,6 @@ struct HeartRateView: View {
         }
     }
 }
-
 
 // MARK: - Preview
 

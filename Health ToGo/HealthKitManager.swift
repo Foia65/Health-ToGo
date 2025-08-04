@@ -301,7 +301,7 @@ class HealthKitManager: ObservableObject {
 
             // For discrete data (like heart rate), calculate daily average
             // For cumulative data (like steps), sum the values
-            return dailyData.compactMap { (date, values) in
+            return dailyData.compactMap { date, values in
                 guard !values.isEmpty else { return nil }
 
                 let finalValue: Double

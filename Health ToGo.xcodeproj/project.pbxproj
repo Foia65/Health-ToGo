@@ -8,9 +8,11 @@
 
 /* Begin PBXBuildFile section */
 		E40CD1AF2E37DE69008219F7 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = E40CD1AE2E37DE69008219F7 /* GoogleMobileAds */; };
+		E43824912E413D67000FDFBC /* .swiftlint.yml in Resources */ = {isa = PBXBuildFile; fileRef = E43824902E413D67000FDFBC /* .swiftlint.yml */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		E43824902E413D67000FDFBC /* .swiftlint.yml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = .swiftlint.yml; sourceTree = "<group>"; };
 		E47D364E2E295822000928D5 /* Health ToGo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Health ToGo.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -39,6 +41,7 @@
 			children = (
 				E47D36502E295822000928D5 /* Health ToGo */,
 				E47D364F2E295822000928D5 /* Products */,
+				E43824902E413D67000FDFBC /* .swiftlint.yml */,
 			);
 			sourceTree = "<group>";
 		};
@@ -59,6 +62,7 @@
 			buildPhases = (
 				E47D364A2E295822000928D5 /* Sources */,
 				E4F65AFA2E3525F000CCE8B7 /* Build number increase */,
+				E43824922E413EA3000FDFBC /* SwiftLint */,
 				E47D364B2E295822000928D5 /* Frameworks */,
 				E47D364C2E295822000928D5 /* Resources */,
 			);
@@ -119,12 +123,32 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E43824912E413D67000FDFBC /* .swiftlint.yml in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		E43824922E413EA3000FDFBC /* SwiftLint */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = SwiftLint;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\n# export NO_SANDBOX=1\n# /opt/homebrew/bin/swiftlint   # (on Apple Silicon)\n\n#!/bin/zsh\n\n# 1. Set PATH for Homebrew (critical for Xcode sandbox)\nexport PATH=\"/opt/homebrew/bin:/usr/local/bin:$PATH\"\n\n# 2. Debug output (visible in Xcode logs)\necho \"=== SwiftLint Debug ===\"\necho \"Config path: ${SRCROOT}/.swiftlint.yml\"\necho \"SwiftLint path: $(which swiftlint)\"\necho \"SwiftLint version: $(swiftlint --version)\"\n\n# 3. Run with absolute paths\n/opt/homebrew/bin/swiftlint lint \\\n  --config \"${SRCROOT}/.swiftlint.yml\" \\\n  --cache-path \"${SRCROOT}/DerivedData/SwiftLintCache\" \\\n  || echo \"SwiftLint completed with warnings\"\n";
+		};
 		E4F65AFA2E3525F000CCE8B7 /* Build number increase */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -285,7 +309,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "Health ToGo/Health ToGo.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 153;
+				CURRENT_PROJECT_VERSION = 183;
 				DEVELOPMENT_TEAM = TY6W6JY45R;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -321,7 +345,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "Health ToGo/Health ToGo.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 153;
+				CURRENT_PROJECT_VERSION = 183;
 				DEVELOPMENT_TEAM = TY6W6JY45R;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;

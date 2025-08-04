@@ -1,0 +1,79 @@
+# Include and exclude paths
+included:
+  - Health ToGo  # Replace with your main source folder if needed
+excluded:
+  - Carthage
+  - Pods
+  - fastlane
+  - build
+  - DerivedData
+  - .swiftlint.yml
+
+# Opt-in rules (recommended but off by default)
+opt_in_rules:
+  - array_init
+#  - attributes
+  - closure_spacing
+  - collection_alignment
+  - contains_over_first_not_nil
+  - empty_collection_literal
+  - extension_access_modifier
+  - first_where
+  - force_unwrapping
+  - multiline_arguments_brackets
+  - multiline_function_chains
+  - nimble_operator
+  - optional_enum_case_matching
+  - overridden_super_call
+  - private_outlet
+  - redundant_nil_coalescing
+  - single_test_class
+  - toggle_bool
+  - unneeded_parentheses_in_closure_argument
+  - vertical_parameter_alignment_on_call
+  - yoda_condition
+
+# Rule configuration
+line_length:
+  warning: 300
+  error: 350
+  ignores_comments: true
+  ignores_urls: true
+
+type_body_length:
+  warning: 300
+  error: 500
+
+file_length:
+  warning: 400
+  error: 600
+  ignore_comment_only_lines: true
+
+function_body_length:
+  warning: 50
+  error: 90
+
+identifier_name:
+  excluded:
+    - id
+    - URL
+    - x
+    - y
+
+# Disable some rules you may find noisy
+disabled_rules:
+  - trailing_whitespace
+  - todo
+#  - identifier_name
+  - redundant_discardable_let
+  - function_parameter_count
+#  - line_length # comment this out if you want it enforced
+  - multiple_closures_with_trailing_closure
+
+
+
+analyzer_rules:
+  - unused_declaration
+  - explicit_self
+  - unused_parameter
+

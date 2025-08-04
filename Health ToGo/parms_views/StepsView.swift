@@ -2,8 +2,8 @@ import SwiftUI
 import HealthKit
 
 struct StepsView: View {
-    // State variables
-    @State private var startDate = Calendar.current.date(byAdding: .day, value: -7, to: Date())! // 1 week ago
+    // This reads as "get the date 7 days ago, or if that fails for any reason, use today's date."
+    @State private var startDate = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
     @State private var endDate: Date = {
         let calendar = Calendar.current
         let today = Date()
@@ -24,101 +24,109 @@ struct StepsView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                List {
-                    // Titolo
-                    Section {
+            VStack {
+                ZStack {
+                    List {
+                        // Titolo
+                        Section {
                             Text("🚶Steps")
                                 .font(.largeTitle.bold())
                                 .padding(.bottom, 8)
                         }
                         .listRowInsets(EdgeInsets())
                         .listRowBackground(Color.clear)
-
-                    // Date Controls Section
-                    DateControlsView(
-                        fetchAllData: $fetchAllData,
-                        startDate: $startDate,
-                        endDate: $endDate,
-                        isPremiumUser: $isPremiumUser,
-                        onDateChange: fetchStepData,                            onFetchAllDataToggle: handleFetchAllDataToggle
-
-                    )
-
-                    // Summary Section
-                    if !stepData.isEmpty {
-                        Section(header: Text("Summary")) {
-                            HealthSummaryView(
-                                summary: healthDataSummary,
-                                dataType: "Steps",
-                                unit: "steps"
-                            )
-                        }
-                    }
-
-                    // Export Section
-                      Section(header: Text("Export")) {
-                          Button(action: exportCSV) {
-                              Label("Export as CSV", systemImage: "doc.text")
-                              if !isPremiumUser {
-                                  Spacer()
-                                  Image(systemName: "crown.fill")
-                                      .foregroundColor(.orange)
-                                      .font(.caption)
-                              }
-                          }
-                          .buttonStyle(.bordered)
-                        //   .opacity(isPremiumUser ? 1.0 : 0.6)
-                      }
-
-                    // Detailed Data Section
-                    Section(header: Text("Daily Step Data")) {
-                        if isLoading {
-                            ProgressView()
-                                .frame(maxWidth: .infinity)
-                        } else if let error = errorMessage {
-                            Text("Error: \(error)")
-                                .foregroundColor(.red)
-                        } else if stepData.isEmpty {
-                            Text("No step data available")
-                                .foregroundColor(.secondary)
-                        } else {
-                            ForEach(stepData) { dataPoint in
-                                DailyHealthDataView(
-                                    dataPoint: dataPoint,
+                        
+                        // Date Controls Section
+                        DateControlsView(
+                            fetchAllData: $fetchAllData,
+                            startDate: $startDate,
+                            endDate: $endDate,
+                            isPremiumUser: $isPremiumUser,
+                            onDateChange: fetchStepData, onFetchAllDataToggle: handleFetchAllDataToggle
+                            
+                        )
+                        
+                        // Summary Section
+                        if !stepData.isEmpty {
+                            Section(header: Text("Summary")) {
+                                HealthSummaryView(
+                                    summary: healthDataSummary,
                                     dataType: "Steps",
                                     unit: "steps"
                                 )
                             }
                         }
+                        
+                        // Export Section
+                        Section(header: Text("Export")) {
+                            Button(action: exportCSV) {
+                                Label("Export as CSV", systemImage: "doc.text")
+                                if !isPremiumUser {
+                                    Spacer()
+                                    Image(systemName: "crown.fill")
+                                        .foregroundColor(.orange)
+                                        .font(.caption)
+                                }
+                            }
+                            .buttonStyle(.bordered)
+                            //   .opacity(isPremiumUser ? 1.0 : 0.6)
+                        }
+                        
+                        // Detailed Data Section
+                        Section(header: Text("Daily Step Data")) {
+                            if isLoading {
+                                ProgressView()
+                                    .frame(maxWidth: .infinity)
+                            } else if let error = errorMessage {
+                                Text("Error: \(error)")
+                                    .foregroundColor(.red)
+                            } else if stepData.isEmpty {
+                                Text("No step data available")
+                                    .foregroundColor(.secondary)
+                            } else {
+                                ForEach(stepData) { dataPoint in
+                                    DailyHealthDataView(
+                                        dataPoint: dataPoint,
+                                        dataType: "Steps",
+                                        unit: "steps"
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    .blur(radius: isLoading ? 2 : 0)
+                    .disabled(isLoading)
+                    // .navigationTitle("🚶Steps Analytics")
+                    .refreshable {
+                        fetchStepData()
+                    }
+                    .onAppear {
+                        requestHealthKitAuthorization()
+                    }
+                    .alert("Premium Feature Required", isPresented: $showPremiumAlert) {
+                        Button("Upgrade to Premium") {
+                            showPremiumInfo = true
+                        }
+                        Button("Cancel", role: .cancel) {
+                            // Reset the toggle if user cancels fetch all data
+                            if premiumAlertType == .allData {
+                                fetchAllData = false
+                            }
+                        }
+                    } message: {
+                        Text(premiumAlertMessage)
+                    }
+                    
+                    // Loading overlay
+                    if isLoading {
+                        LoadingOverlayView(message: "Fetching step data...")
                     }
                 }
-                .blur(radius: isLoading ? 2 : 0)
-                .disabled(isLoading)
-                // .navigationTitle("🚶Steps Analytics")
-                .refreshable {
-                    fetchStepData()
-                }
-                .onAppear {
-                    requestHealthKitAuthorization()
-                }
-                .alert("Premium Feature Required", isPresented: $showPremiumAlert) {
-                                        Button("Upgrade to Premium") {
-                                            showPremiumInfo = true
-                                        }
-                                        Button("Cancel", role: .cancel) {
-                                            // Reset the toggle if user cancels fetch all data
-                                            if premiumAlertType == .allData {
-                                                fetchAllData = false
-                                            }
-                                        }
-                                    } message: {
-                                        Text(premiumAlertMessage)
-                                    }
-
-                // Loading overlay
-                if isLoading {
-                    LoadingOverlayView(message: "Fetching step data...")
+                
+                if !isPremiumUser {
+                    BannerContentView()
+                        .background(Color(UIColor.systemBackground))
+                        .frame(height: 60)
                 }
             }
         }
@@ -201,7 +209,6 @@ struct StepsView: View {
         }
     }
     
-    
     private func handleFetchAllDataToggle() {
         // For non-premium users trying to enable fetch all data
         if !isPremiumUser {
@@ -220,7 +227,6 @@ enum PremiumAlertType {
     case csvExport
     case allData
 }
-
 
 // MARK: - Preview
 

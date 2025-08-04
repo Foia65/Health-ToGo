@@ -63,7 +63,12 @@ class CSVExporter {
             UIApplication.shared.connectedScenes
                 .compactMap { $0 as? UIWindowScene }
                 .flatMap { $0.windows }
-                .first(where: { $0.isKeyWindow })?.rootViewController?.present(activityVC, animated: true)
+                .first(where: { $0.isKeyWindow })?
+                .rootViewController?
+                .present(
+                    activityVC,
+                    animated: true
+                )
         } catch {
             onError("Export failed: \(error.localizedDescription)")
         }

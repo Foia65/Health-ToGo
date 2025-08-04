@@ -2,7 +2,9 @@ import SwiftUI
 import HealthKit
 
 struct WeightView: View {
-    @State private var startDate = Calendar.current.date(byAdding: .day, value: -7, to: Date())!
+    // This reads as "get the date 7 days ago, or if that fails for any reason, use today's date."
+    @State private var startDate = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
+
     @State private var endDate: Date = {
         let calendar = Calendar.current
         let today = Date()
@@ -15,7 +17,6 @@ struct WeightView: View {
     @State private var showPremiumAlert = false
     @State private var showPremiumInfo = false
     @State private var premiumAlertType: PremiumAlertType = .csvExport
-
 
     @AppStorage("isPremiumUser") private var isPremiumUser = false
     // HealthKit manager - same instance
@@ -121,18 +122,17 @@ struct WeightView: View {
                         Text(premiumAlertMessage)
                     }
                     
-                    
                     // Loading overlay - same component, different message
                     if isLoading {
                         LoadingOverlayView(message: "Fetching weight data...")
                     }
                 }
                 
-                //                if !isPremiumUser {
-                //                    BannerContentView()
-                //                        .background(Color(UIColor.systemBackground))
-                //                        .frame(height: 60)
-                //                }
+                                if !isPremiumUser {
+                                    BannerContentView()
+                                        .background(Color(UIColor.systemBackground))
+                                        .frame(height: 60)
+                                }
             }
         }
         
@@ -234,7 +234,6 @@ struct WeightView: View {
         }
     }
 }
-
 
 // MARK: - Preview
 

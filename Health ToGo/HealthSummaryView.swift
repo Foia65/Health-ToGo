@@ -85,7 +85,7 @@ struct DailyHealthDataView: View {
 
 // MARK: - Reusable Date Controls View
 
-import SwiftUI
+// import SwiftUI
 
 // MARK: - Reusable Date Controls View
 
@@ -133,23 +133,27 @@ struct DateControlsView: View {
             }
 
             if !fetchAllData {
-                DatePicker("Start Date",
-                           selection: $startDate,
-                           in: ...endDate,
-                           displayedComponents: .date)
+                DatePicker(
+                    "Start Date",
+                    selection: $startDate,
+                    in: ...endDate,
+                    displayedComponents: .date
+                )
                 .onChange(of: startDate) { onDateChange() }
 
-                DatePicker("End Date",
-                           selection: $endDate,
-                           in: startDate...Date(),
-                           displayedComponents: .date)
+                DatePicker(
+                    "End Date",
+                    selection: $endDate,
+                    in: startDate...Date(),
+                    displayedComponents: .date
+                )
                 .onChange(of: endDate) { onDateChange() }
             }
         }
     }
 }
 
-//struct DateControlsView: View {
+// struct DateControlsView: View {
 //    @Binding var fetchAllData: Bool
 //    @Binding var startDate: Date
 //    @Binding var endDate: Date
