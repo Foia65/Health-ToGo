@@ -70,56 +70,13 @@ class HealthKitManager: ObservableObject {
 
     // MARK: - Private Methods
 
-//    private func fetchDataInRange(
-//        for quantityType: HKQuantityType,
-//        startDate: Date,
-//        endDate: Date,
-//        completion: @escaping (Result<[HealthDataPoint], Error>) -> Void
-//    ) {
-//        let predicate = HKQuery.predicateForSamples(
-//            withStart: startDate,
-//            end: endDate,
-//            options: .strictStartDate
-//        )
-//        
-//        // Determine the appropriate statistics option based on data type
-//        let statisticsOptions = getStatisticsOptions(for: quantityType)
-//        
-//        let query = HKStatisticsCollectionQuery(
-//            quantityType: quantityType,
-//            quantitySamplePredicate: predicate,
-//            options: statisticsOptions,
-//            anchorDate: startDate,
-//            intervalComponents: DateComponents(day: 1)
-//        )
-//        
-//        query.initialResultsHandler = { query, results, error in
-//            DispatchQueue.main.async {
-//                if let error = error {
-//                    completion(.failure(error))
-//                    return
-//                }
-//                
-//                guard let results = results else {
-//                    completion(.failure(HealthKitError.noResults))
-//                    return
-//                }
-//                
-//                let dataPoints = self.processStatisticsResults(results, statisticsOptions: statisticsOptions, startDate: startDate, endDate: endDate)
-//                completion(.success(dataPoints))
-//            }
-//        }
-//        
-//        healthStore.execute(query)
-//    }
-
     private func fetchDataInRange(
             for quantityType: HKQuantityType,
             startDate: Date,
             endDate: Date,
             completion: @escaping (Result<[HealthDataPoint], Error>) -> Void
         ) {
-            // Fix 1: Ensure we're using the start of day in the current timezone
+            // Ensure we're using the start of day in the current timezone
             let adjustedStartDate = calendar.startOfDay(for: startDate)
             let adjustedEndDate = calendar.date(bySettingHour: 23, minute: 59, second: 59, of: endDate) ?? endDate
 
@@ -132,7 +89,7 @@ class HealthKitManager: ObservableObject {
             // Determine the appropriate statistics option based on data type
             let statisticsOptions = getStatisticsOptions(for: quantityType)
 
-            // Fix 2: Use calendar's timezone for interval components
+            //  Use calendar's timezone for interval components
             let query = HKStatisticsCollectionQuery(
                 quantityType: quantityType,
                 quantitySamplePredicate: predicate,
@@ -198,64 +155,6 @@ class HealthKitManager: ObservableObject {
 
     // MARK: - Data Processing
 
-//    private func processStatisticsResults(
-//        _ results: HKStatisticsCollection,
-//        statisticsOptions: HKStatisticsOptions,
-//        startDate: Date,
-//        endDate: Date
-//    ) -> [HealthDataPoint] {
-//        var dataPoints: [HealthDataPoint] = []
-//        
-//        results.enumerateStatistics(from: startDate, to: endDate) { statistics, _ in
-//            let value: Double
-//            let unit = self.getUnit(for: statistics.quantityType) // Use correct unit
-//            
-//            // Use appropriate method based on statistics options
-//            if statisticsOptions.contains(.cumulativeSum) {
-//                value = statistics.sumQuantity()?.doubleValue(for: unit) ?? 0
-//            } else if statisticsOptions.contains(.discreteAverage) {
-//                value = statistics.averageQuantity()?.doubleValue(for: unit) ?? 0
-//            } else {
-//                value = 0
-//            }
-//            
-//            dataPoints.append(HealthDataPoint(date: statistics.startDate, value: value))
-//        }
-//        
-//        return dataPoints
-//    }
-//    
-//    private func processRawSamples(_ samples: [HKQuantitySample]) -> [HealthDataPoint] {
-//        var dailyData: [Date: [Double]] = [:]
-//        let calendar = Calendar.current
-//        
-//        for sample in samples {
-//            let date = calendar.startOfDay(for: sample.startDate)
-//            let value = sample.quantity.doubleValue(for: getUnit(for: sample.quantityType))
-//            
-//            if dailyData[date] == nil {
-//                dailyData[date] = []
-//            }
-//            dailyData[date]?.append(value)
-//        }
-//        
-//        // For discrete data (like heart rate), calculate daily average
-//        // For cumulative data (like steps), sum the values
-//        return dailyData.compactMap { (date, values) in
-//            guard !values.isEmpty else { return nil }
-//            
-//            let finalValue: Double
-//            if isCumulativeDataType(for: samples.first?.quantityType) {
-//                finalValue = values.reduce(0, +) // Sum for cumulative data
-//            } else {
-//                finalValue = values.reduce(0, +) / Double(values.count) // Average for discrete data
-//            }
-//            
-//            return HealthDataPoint(date: date, value: finalValue)
-//        }
-//        .sorted { $0.date < $1.date }
-//    }
-
     private func processStatisticsResults(
             _ results: HKStatisticsCollection,
             statisticsOptions: HKStatisticsOptions,
@@ -265,19 +164,23 @@ class HealthKitManager: ObservableObject {
             var dataPoints: [HealthDataPoint] = []
 
             results.enumerateStatistics(from: startDate, to: endDate) { statistics, _ in
-                let value: Double
-                let unit = self.getUnit(for: statistics.quantityType)
 
-                // Use appropriate method based on statistics options
+                let unit = self.getUnit(for: statistics.quantityType)
+                let identifier = HKQuantityTypeIdentifier(rawValue: statistics.quantityType.identifier)
+
+                let rawValue: Double
                 if statisticsOptions.contains(.cumulativeSum) {
-                    value = statistics.sumQuantity()?.doubleValue(for: unit) ?? 0
+                    rawValue = statistics.sumQuantity()?.doubleValue(for: unit) ?? 0
                 } else if statisticsOptions.contains(.discreteAverage) {
-                    value = statistics.averageQuantity()?.doubleValue(for: unit) ?? 0
+                    rawValue = statistics.averageQuantity()?.doubleValue(for: unit) ?? 0
                 } else {
-                    value = 0
+                    rawValue = 0
                 }
 
-                // Fix 3: Use the start of day in current timezone for consistency
+                // ✅ Apply multiplier only for bodyFatPercentage
+                let value = (identifier == .bodyFatPercentage) ? rawValue * 100 : rawValue
+                
+                // Use the start of day in current timezone for consistency
                 let normalizedDate = calendar.startOfDay(for: statistics.startDate)
                 dataPoints.append(HealthDataPoint(date: normalizedDate, value: value))
             }
@@ -289,9 +192,15 @@ class HealthKitManager: ObservableObject {
             var dailyData: [Date: [Double]] = [:]
 
             for sample in samples {
-                // Fix 4: Normalize the date to start of day in current timezone
                 let normalizedDate = calendar.startOfDay(for: sample.startDate)
-                let value = sample.quantity.doubleValue(for: getUnit(for: sample.quantityType))
+                
+                // Get the unit as before
+                let unit = getUnit(for: sample.quantityType)
+                let rawValue = sample.quantity.doubleValue(for: unit)
+
+                // ✅ New: Check if this sample is body fat %, then multiply
+                let identifier = HKQuantityTypeIdentifier(rawValue: sample.quantityType.identifier)
+                let value = (identifier == .bodyFatPercentage) ? rawValue * 100 : rawValue
 
                 if dailyData[normalizedDate] == nil {
                     dailyData[normalizedDate] = []
@@ -333,6 +242,7 @@ class HealthKitManager: ObservableObject {
              HKQuantityTypeIdentifier.bodyMass.rawValue,
              HKQuantityTypeIdentifier.height.rawValue,
              HKQuantityTypeIdentifier.bodyMassIndex.rawValue,
+             HKQuantityTypeIdentifier.bodyFatPercentage.rawValue,
              HKQuantityTypeIdentifier.bloodPressureSystolic.rawValue,
              HKQuantityTypeIdentifier.bloodPressureDiastolic.rawValue:
             return .discreteAverage
@@ -357,7 +267,7 @@ class HealthKitManager: ObservableObject {
     private func getUnit(for quantityType: HKQuantityType) -> HKUnit {
         switch quantityType.identifier {
         case HKQuantityTypeIdentifier.bodyMass.rawValue:
-            return HKUnit.gramUnit(with: .kilo) // ✅ Show kilograms with decimal precision
+            return HKUnit.gramUnit(with: .kilo) // Show kilograms with decimal precision
 
         case HKQuantityTypeIdentifier.stepCount.rawValue,
              HKQuantityTypeIdentifier.flightsClimbed.rawValue:
@@ -380,42 +290,16 @@ class HealthKitManager: ObservableObject {
              HKQuantityTypeIdentifier.bloodPressureDiastolic.rawValue:
             return HKUnit.millimeterOfMercury()
 
+        case HKQuantityTypeIdentifier.bodyMassIndex.rawValue:
+            return HKUnit.count()
+
+        case HKQuantityTypeIdentifier.bodyFatPercentage.rawValue:
+                   return HKUnit.count()
+
         default:
             return HKUnit.count()
         }
     }
-
-//    private func getUnit(for quantityType: HKQuantityType) -> HKUnit {
-//        switch quantityType.identifier {
-//        case HKQuantityTypeIdentifier.stepCount.rawValue,
-//             HKQuantityTypeIdentifier.flightsClimbed.rawValue:
-//            return HKUnit.count()
-//            
-//        case HKQuantityTypeIdentifier.heartRate.rawValue:
-//            return HKUnit(from: "count/min") // BPM
-//            
-//        case HKQuantityTypeIdentifier.distanceWalkingRunning.rawValue:
-//            return HKUnit.mile() // or HKUnit.meter() for metric
-//            
-//        case HKQuantityTypeIdentifier.activeEnergyBurned.rawValue,
-//             HKQuantityTypeIdentifier.basalEnergyBurned.rawValue:
-//            return HKUnit.kilocalorie()
-//            
-//        case HKQuantityTypeIdentifier.bodyMass.rawValue:
-//            // return HKUnit.pound() // or HKUnit.gramUnit(with: .kilo) for metric
-//            return HKUnit.gramUnit(with: .kilo)
-//            
-//        case HKQuantityTypeIdentifier.height.rawValue:
-//            return HKUnit.inch() // or HKUnit.meter() for metric
-//            
-//        case HKQuantityTypeIdentifier.bloodPressureSystolic.rawValue,
-//             HKQuantityTypeIdentifier.bloodPressureDiastolic.rawValue:
-//            return HKUnit.millimeterOfMercury()
-//            
-//        default:
-//            return HKUnit.count()
-//        }
-//    }
 
     private func isCumulativeDataType(for quantityType: HKQuantityType?) -> Bool {
         guard let quantityType = quantityType else { return false }

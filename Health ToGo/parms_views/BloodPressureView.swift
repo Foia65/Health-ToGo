@@ -7,7 +7,8 @@ import HealthKit
 
 struct BloodPressureView: View {
     // State variables
-    @State private var startDate = Calendar.current.date(byAdding: .day, value: -7, to: Date())! // 1 week ago
+    // This reads as "get the date 7 days ago, or if that fails for any reason, use today's date."
+    @State private var startDate = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
 
     @State private var endDate: Date = {
         let calendar = Calendar.current
@@ -280,10 +281,12 @@ struct BloodPressureDataPoint: Identifiable {
     var systolic: Int?
     var diastolic: Int?
 
+// hasData will be true if either systolic or diastolic is a non-nil value greater than 0
+// it will be false if both are nil, or both are ≤ 0
     var hasData: Bool {
-        return (systolic != nil && systolic! > 0) || (diastolic != nil && diastolic! > 0)
+        return (systolic ?? 0 > 0) || (diastolic ?? 0 > 0)
     }
-
+    
     var formattedReading: String {
         switch (systolic, diastolic) {
         case (let sys?, let dia?) where sys > 0 && dia > 0:

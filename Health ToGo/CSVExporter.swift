@@ -3,6 +3,8 @@ import UIKit
 
 // MARK: - CSV Exporter
 
+// FatPct
+
 class CSVExporter {
 
     static func exportHealthData(
@@ -24,7 +26,13 @@ class CSVExporter {
 
         for dataPoint in data {
             let dateString = rowDateFormatter.string(from: dataPoint.date)
-            csvString += "\(dateString),\(dataPoint.value)\n"
+            let formattedValue: String
+            if dataType == "FatPct" {
+                formattedValue = String(format: "%.2f", dataPoint.value)  // solo due decimali per il Fat%
+            } else {
+                formattedValue = "\(dataPoint.value)"
+            }
+            csvString += "\(dateString),\(formattedValue)\n"
         }
 
         saveAndShare(data: csvString, filename: filename, onError: onError)

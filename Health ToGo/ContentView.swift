@@ -21,7 +21,7 @@ struct ContentView: View {
                         }
 
                         NavigationLink(
-                            destination: GenericView()
+                            destination: BMIView()
                         ) {
                             Label {
                                 Text("BMI (Body Mass Index)")
@@ -32,7 +32,7 @@ struct ContentView: View {
                         }
 
                         NavigationLink(
-                            destination: GenericView()
+                            destination: BodyFatView()
                         ) {
                             Label {
                                 Text("Body Fat (%)")

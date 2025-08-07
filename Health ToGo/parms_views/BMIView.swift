@@ -1,7 +1,7 @@
 import SwiftUI
 import HealthKit
 
-struct HeartRateView: View {
+struct BMIView: View {
     // This reads as "get the date 7 days ago, or if that fails for any reason, use today's date."
     @State private var startDate = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
 
@@ -11,7 +11,7 @@ struct HeartRateView: View {
         return calendar.date(bySettingHour: 23, minute: 59, second: 59, of: today) ?? today
     }()
 
-    @State private var heartRateData: [HealthDataPoint] = []
+    @State private var BMIData: [HealthDataPoint] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var fetchAllData = false
@@ -31,9 +31,14 @@ struct HeartRateView: View {
                     List {
                         // Titolo
                         Section {
-                            Text("❤️ Heart Rate")
-                                .font(.largeTitle.bold())
-                                .padding(.bottom, 8)
+                            HStack {
+                                Image(systemName: "figure.arms.open")
+                                    .font(.largeTitle.bold())
+                                    .foregroundStyle(.green)
+                                Text("Body Mass Index")
+                                    .font(.largeTitle.bold())
+                                    .padding(.bottom, 8)
+                            }
                         }
                         .listRowInsets(EdgeInsets())
                         .listRowBackground(Color.clear)
@@ -44,22 +49,22 @@ struct HeartRateView: View {
                             startDate: $startDate,
                             endDate: $endDate,
                             isPremiumUser: $isPremiumUser,
-                            onDateChange: fetchHeartRateData,
+                            onDateChange: fetchBMIData,
                             onFetchAllDataToggle: handleFetchAllDataToggle
                         )
                         
                         // Summary Section
-                        if !heartRateData.isEmpty {
+                        if !BMIData.isEmpty {
                             Section(header: Text("Summary")) {
                                 HealthSummaryView(
                                     summary: healthDataSummary,
-                                    dataType: "Heart Rate",
-                                    unit: "BPM"
+                                    dataType: "BMI",
+                                    unit: ""
                                 )
                             }
                         }
                         
-                        // Export Section 
+                        // Export Section
                         Section(header: Text("Export")) {
                             Button(action: exportCSV) {
                                 Label("Export as CSV", systemImage: "doc.text")
@@ -74,22 +79,22 @@ struct HeartRateView: View {
                         }
                         
                         // Detailed Data Section
-                        Section(header: Text("Daily Heart Rate Data")) {
+                        Section(header: Text("Daily BMI Data")) {
                             if isLoading {
                                 ProgressView()
                                     .frame(maxWidth: .infinity)
                             } else if let error = errorMessage {
                                 Text("Error: \(error)")
                                     .foregroundColor(.red)
-                            } else if heartRateData.isEmpty {
-                                Text("No heart rate data available")
+                            } else if BMIData.isEmpty {
+                                Text("No BMI data available")
                                     .foregroundColor(.secondary)
                             } else {
-                                ForEach(heartRateData) { dataPoint in
+                                ForEach(BMIData) { dataPoint in
                                     DailyHealthDataView(
                                         dataPoint: dataPoint,
-                                        dataType: "Heart Rate",
-                                        unit: "BPM"
+                                        dataType: "BMI",
+                                        unit: ""
                                     )
                                 }
                             }
@@ -98,7 +103,7 @@ struct HeartRateView: View {
                     .blur(radius: isLoading ? 2 : 0)
                     .disabled(isLoading)
                     .refreshable {
-                        fetchHeartRateData()
+                        fetchBMIData()
                     }
                     .onAppear {
                         requestHealthKitAuthorization()
@@ -119,7 +124,7 @@ struct HeartRateView: View {
                     
                     // Loading overlay
                     if isLoading {
-                        LoadingOverlayView(message: "Fetching heart rate data...")
+                        LoadingOverlayView(message: "Fetching BMI data...")
                     }
                 }
                 
@@ -139,11 +144,11 @@ struct HeartRateView: View {
 
     private var healthDataSummary: HealthDataSummary {
         HealthDataSummary(
-            data: heartRateData,
+            data: BMIData,
             startDate: startDate,
             endDate: endDate,
             fetchAllData: fetchAllData,
-            isCumulative: false  // Heart rate is not cumulative
+            isCumulative: false  // BMI is not cumulative
         )
     }
 
@@ -160,26 +165,26 @@ struct HeartRateView: View {
 
     private func requestHealthKitAuthorization() {
         // Only change: different HKQuantityTypeIdentifier
-        healthKitManager.requestAuthorization(for: [.heartRate]) { result in
+        healthKitManager.requestAuthorization(for: [.bodyMassIndex]) { result in
             switch result {
             case .success:
-                fetchHeartRateData()
+                fetchBMIData()
             case .failure(let error):
                 errorMessage = error.localizedDescription
             }
         }
     }
 
-    private func fetchHeartRateData() {
+    private func fetchBMIData() {
         guard !isLoading else { return }
 
         isLoading = true
         errorMessage = nil
-        heartRateData = []  // Different variable name
+        BMIData = []  // Different variable name
 
         // Only change: different HKQuantityTypeIdentifier
         healthKitManager.fetchData(
-            for: .heartRate,
+            for: .bodyMassIndex,
             startDate: startDate,
             endDate: endDate,
             fetchAll: fetchAllData
@@ -188,7 +193,8 @@ struct HeartRateView: View {
 
             switch result {
             case .success(let data):
-                heartRateData = data  // Different variable name
+                // Filter out days with no  measurement (value = 0)
+                BMIData = data.filter { $0.value > 0 }
             case .failure(let error):
                 errorMessage = error.localizedDescription
             }
@@ -202,10 +208,10 @@ struct HeartRateView: View {
               return
           }
         CSVExporter.exportHealthData(
-            data: heartRateData,  // Different data source
+            data: BMIData,  // Different data source
             startDate: startDate,
             endDate: endDate,
-            dataType: "HeartRate"  // Different data type name
+            dataType: "BMI"  // Different data type name
         ) { error in
             errorMessage = error
         }
@@ -218,15 +224,13 @@ struct HeartRateView: View {
             showPremiumAlert = true
         } else {
             // Premium user - proceed with data fetch
-            fetchHeartRateData()
+            fetchBMIData()
         }
     }
 }
 
-// MARK: - Preview
-
-struct HeartRateView_Previews: PreviewProvider {
+struct BMIView_Previews: PreviewProvider {
     static var previews: some View {
-        HeartRateView()
+        BMIView()
     }
 }
