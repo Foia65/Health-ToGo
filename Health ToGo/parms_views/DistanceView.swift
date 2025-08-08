@@ -1,27 +1,25 @@
 import SwiftUI
 import HealthKit
 
-struct BMIView: View {
+struct DistanceView: View {
     // This reads as "get the date 7 days ago, or if that fails for any reason, use today's date."
     @State private var startDate = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
-
     @State private var endDate: Date = {
         let calendar = Calendar.current
         let today = Date()
         return calendar.date(bySettingHour: 23, minute: 59, second: 59, of: today) ?? today
     }()
 
-    @State private var BMIData: [HealthDataPoint] = []
+    @State private var distanceData: [HealthDataPoint] = [] // qui vengono salvati i dati estratti
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var fetchAllData = false
     @State private var showPremiumAlert = false
     @State private var premiumAlertType: PremiumAlertType = .csvExport
     @State private var showPremiumInfo = false
-
+    
     @AppStorage("isPremiumUser") private var isPremiumUser = false
 
-    // HealthKit manager
     @StateObject private var healthKitManager = HealthKitManager()
 
     var body: some View {
@@ -32,12 +30,12 @@ struct BMIView: View {
                         // Titolo
                         Section {
                             HStack {
-                                Image(systemName: "figure.arms.open")
-                                    .font(.largeTitle.bold())
-                                    .foregroundStyle(.green)
-                                Text("Body Mass Index")
+                                Image(systemName: "speedometer")
+                                    .font(.largeTitle)
+                                    .foregroundStyle(.blue)
+                                Text("Walk/Run distance")
                                     .font(.title.bold())
-                                  //  .padding(.bottom, 8)
+                                 //   .padding(.bottom, 8)
                             }
                         }
                         .listRowInsets(EdgeInsets())
@@ -49,17 +47,17 @@ struct BMIView: View {
                             startDate: $startDate,
                             endDate: $endDate,
                             isPremiumUser: $isPremiumUser,
-                            onDateChange: fetchBMIData,
-                            onFetchAllDataToggle: handleFetchAllDataToggle
+                            onDateChange: fetchDistanceData, onFetchAllDataToggle: handleFetchAllDataToggle
+                            
                         )
                         
                         // Summary Section
-                        if !BMIData.isEmpty {
+                        if !distanceData.isEmpty {
                             Section(header: Text("Summary")) {
                                 HealthSummaryView(
                                     summary: healthDataSummary,
-                                    dataType: "BMI",
-                                    unit: ""
+                                    dataType: "Distance",
+                                    unit: "meters"
                                 )
                             }
                         }
@@ -76,25 +74,26 @@ struct BMIView: View {
                                 }
                             }
                             .buttonStyle(.bordered)
+                            //   .opacity(isPremiumUser ? 1.0 : 0.6)
                         }
                         
                         // Detailed Data Section
-                        Section(header: Text("Daily BMI Data")) {
+                        Section(header: Text("Daily distance Data")) {
                             if isLoading {
                                 ProgressView()
                                     .frame(maxWidth: .infinity)
                             } else if let error = errorMessage {
                                 Text("Error: \(error)")
                                     .foregroundColor(.red)
-                            } else if BMIData.isEmpty {
-                                Text("No BMI data available")
+                            } else if distanceData.isEmpty {
+                                Text("No distance data available")
                                     .foregroundColor(.secondary)
                             } else {
-                                ForEach(BMIData) { dataPoint in
+                                ForEach(distanceData) { dataPoint in
                                     DailyHealthDataView(
                                         dataPoint: dataPoint,
-                                        dataType: "BMI",
-                                        unit: ""
+                                        dataType: "Distance",
+                                        unit: "meters"
                                     )
                                 }
                             }
@@ -103,7 +102,7 @@ struct BMIView: View {
                     .blur(radius: isLoading ? 2 : 0)
                     .disabled(isLoading)
                     .refreshable {
-                        fetchBMIData()
+                        fetchDistanceData()
                     }
                     .onAppear {
                         requestHealthKitAuthorization()
@@ -124,7 +123,7 @@ struct BMIView: View {
                     
                     // Loading overlay
                     if isLoading {
-                        LoadingOverlayView(message: "Fetching BMI data...")
+                        LoadingOverlayView(message: "Fetching distance data...")
                     }
                 }
                 
@@ -136,19 +135,19 @@ struct BMIView: View {
             }
         }
         .sheet(isPresented: $showPremiumInfo) {
-                   PremiumInfo()
-               }
+            PremiumInfo()
+        }
     }
 
     // MARK: - Computed Properties
 
     private var healthDataSummary: HealthDataSummary {
         HealthDataSummary(
-            data: BMIData,
+            data: distanceData,
             startDate: startDate,
             endDate: endDate,
             fetchAllData: fetchAllData,
-            isCumulative: false  // BMI is not cumulative
+            isCumulative: true  // distance is cumulative
         )
     }
 
@@ -162,29 +161,25 @@ struct BMIView: View {
      }
     
     // MARK: - Methods
-
     private func requestHealthKitAuthorization() {
-        // Only change: different HKQuantityTypeIdentifier
-        healthKitManager.requestAuthorization(for: [.bodyMassIndex]) { result in
+        healthKitManager.requestAuthorization(for: [.distanceWalkingRunning]) { result in
             switch result {
             case .success:
-                fetchBMIData()
+                fetchDistanceData()
             case .failure(let error):
                 errorMessage = error.localizedDescription
             }
         }
     }
 
-    private func fetchBMIData() {
+    private func fetchDistanceData() {
         guard !isLoading else { return }
-
         isLoading = true
         errorMessage = nil
-        BMIData = []  // Different variable name
+        distanceData = []  // svuota l'array con i metri
 
-        // Only change: different HKQuantityTypeIdentifier
         healthKitManager.fetchData(
-            for: .bodyMassIndex,
+            for: .distanceWalkingRunning,
             startDate: startDate,
             endDate: endDate,
             fetchAll: fetchAllData
@@ -193,8 +188,7 @@ struct BMIView: View {
 
             switch result {
             case .success(let data):
-                // Filter out days with no  measurement (value = 0)
-                BMIData = data.filter { $0.value > 0 }
+                distanceData = data
             case .failure(let error):
                 errorMessage = error.localizedDescription
             }
@@ -202,21 +196,23 @@ struct BMIView: View {
     }
 
     private func exportCSV() {
-        guard isPremiumUser else {
-              premiumAlertType = .csvExport
-              showPremiumAlert = true
-              return
-          }
+        // Check if user is premium before allowing export
+         guard isPremiumUser else {
+             premiumAlertType = .csvExport
+             showPremiumAlert = true
+             return
+         }
+        
         CSVExporter.exportHealthData(
-            data: BMIData,  // Different data source
+            data: distanceData,
             startDate: startDate,
             endDate: endDate,
-            dataType: "BMI"  // Different data type name
+            dataType: "Distance"
         ) { error in
             errorMessage = error
         }
     }
-
+    
     private func handleFetchAllDataToggle() {
         // For non-premium users trying to enable fetch all data
         if !isPremiumUser {
@@ -224,13 +220,22 @@ struct BMIView: View {
             showPremiumAlert = true
         } else {
             // Premium user - proceed with data fetch
-            fetchBMIData()
+            fetchDistanceData()
         }
     }
 }
 
-struct BMIView_Previews: PreviewProvider {
+// MARK: - Premium Alert Type Enum
+
+// enum PremiumAlertType {
+//     case csvExport
+//     case allData
+// }
+
+// MARK: - Preview
+
+struct DistanceView_Previews: PreviewProvider {
     static var previews: some View {
-        BMIView()
+        DistanceView()
     }
 }

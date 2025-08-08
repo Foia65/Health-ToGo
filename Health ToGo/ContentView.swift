@@ -82,7 +82,7 @@ struct ContentView: View {
                         }
 
                         NavigationLink(
-                            destination: GenericView()
+                            destination: DistanceView()
                         ) {
                             Label {
                                 Text("Distance")
@@ -118,8 +118,8 @@ struct ContentView: View {
             .fullScreenCover(isPresented: $showingSettings) {
                 PreferencesView()
             }
-        }
-    }
+        } // end NavigationStack
+    }  // end Body
 
     private var settingsToolbarItem: some ToolbarContent {
         ToolbarItem(placement: .navigationBarTrailing) {

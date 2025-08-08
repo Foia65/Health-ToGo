@@ -30,8 +30,8 @@ struct StepsView: View {
                         // Titolo
                         Section {
                             Text("🚶Steps")
-                                .font(.largeTitle.bold())
-                                .padding(.bottom, 8)
+                                .font(.title.bold())
+                              //  .padding(.bottom, 8)
                         }
                         .listRowInsets(EdgeInsets())
                         .listRowBackground(Color.clear)

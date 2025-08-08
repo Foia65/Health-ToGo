@@ -36,8 +36,8 @@ struct BodyFatView: View {
                                     .font(.largeTitle.bold())
                                     .foregroundStyle(.purple)
                                 Text("Body Fat Rate")
-                                    .font(.largeTitle.bold())
-                                    .padding(.bottom, 8)
+                                    .font(.title.bold())
+                                  //  .padding(.bottom, 8)
                             }
                         }
                         .listRowInsets(EdgeInsets())

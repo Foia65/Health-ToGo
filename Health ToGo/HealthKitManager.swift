@@ -277,7 +277,7 @@ class HealthKitManager: ObservableObject {
             return HKUnit(from: "count/min")
 
         case HKQuantityTypeIdentifier.distanceWalkingRunning.rawValue:
-            return HKUnit.mile() // or meter for metric
+            return HKUnit.meter() // or mile for imperial
 
         case HKQuantityTypeIdentifier.activeEnergyBurned.rawValue,
              HKQuantityTypeIdentifier.basalEnergyBurned.rawValue:

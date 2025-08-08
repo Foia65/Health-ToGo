@@ -16,10 +16,9 @@ struct PreferencesView: View {
                                 Image(systemName: "info.circle.fill")
                             }
                         }
-
                     }
 
-#if DEBUG
+// #if DEBUG
                     Section(header: Text("DEBUG")) {
                         NavigationLink(
                             destination: TestPremium()
@@ -31,10 +30,10 @@ struct PreferencesView: View {
                             }
                         }
                     }
-#endif
+// #endif
 
-                }
-            }
+                }  // end Form
+            } // end Vstack
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -45,7 +44,7 @@ struct PreferencesView: View {
                 }
             }
         }   // end toolbar
-    }
+    }  // end Body
 }
 
 #Preview {

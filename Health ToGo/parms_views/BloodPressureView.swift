@@ -39,7 +39,7 @@ struct BloodPressureView: View {
                         // Titolo
                         Section {
                             Text("🩺 Blood Pressure")
-                                .font(.largeTitle.bold())
+                                .font(.title.bold())
                                 .padding(.bottom, 8)
                         }
                         .listRowInsets(EdgeInsets())

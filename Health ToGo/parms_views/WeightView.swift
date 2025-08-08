@@ -34,9 +34,9 @@ struct WeightView: View {
                                     .font(.largeTitle.bold())
                                     .foregroundStyle(.blue)
                                 Text("Weight")
-                                    .font(.largeTitle.bold())
+                                    .font(.title.bold())
                             }
-                            .padding(.bottom, 8)
+ //                           .padding(.bottom, 8)
                             
                         }
                         .listRowInsets(EdgeInsets())
